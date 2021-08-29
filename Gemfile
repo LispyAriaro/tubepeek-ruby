@@ -9,6 +9,7 @@ gem "json"
 gem "sinatra"
 gem "puma"
 gem "activerecord"
+gem "sqlite3"
 gem "httparty"
 
 gem 'rspec', '~> 3.0'

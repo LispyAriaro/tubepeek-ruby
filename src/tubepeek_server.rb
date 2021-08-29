@@ -2,6 +2,7 @@ require 'active_record'
 require 'sinatra/base'
 require 'faye/websocket'
 require 'json'
+require_relative './migrations/run_migrations'
 
 module TubePeek
   class MainApp < Sinatra::Base
@@ -91,3 +92,5 @@ module TubePeek
     # end
   end
 end
+
+TubePeekMigrations::run_migrations
