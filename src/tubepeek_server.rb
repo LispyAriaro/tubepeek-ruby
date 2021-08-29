@@ -4,13 +4,21 @@ require 'faye/websocket'
 require 'json'
 require 'yaml'
 require_relative './migrations/run_migrations'
+require_relative './entities'
 
 module TubePeek
   def self.start_server
     if ENV['YOUTUBE_API_KEY'] == nil
-      db_config_file = File.open('.dev-env')
-      db_config = YAML::load(db_config_file)
-      puts db_config
+      # File::open('dev-env.yaml') do |config_file|
+      #   config = YAML::load(config_file)
+      #   puts config
+      #   puts config['YOUTUBE_API_KEY']
+      # end
+
+      config_file = File.open('dev-env.yaml')
+      config = YAML::load(config_file)
+      puts config
+      puts config['YOUTUBE_API_KEY']
     end
 
     TubePeekMigrations::run_migrations
@@ -43,7 +51,7 @@ module TubePeek
           p [:message, event.data]
           json = JSON.parse(event.data)
 
-          handle_ws_msg json, nil, ws
+          handle_ws_msg json, ws
           # @clients.each {|ws_item| ws_item.send(event.data) }
         end
 
@@ -60,18 +68,18 @@ module TubePeek
       end
     end
 
-    def handle_ws_msg (json, db_con, ws)
-      case json 'title'
+    def handle_ws_msg (json, ws)
+      case json['action']
       when 'TakeUserMessage'
-        handle_user json, nil, ws
+        handle_user json, ws
       when 'UserChangedOnlineStatus'
-        handle_online_status_change json, nil, ws
+        handle_online_status_change json, ws
       when 'MakeFriendship'
-        handle_friendship json, nil, ws
+        handle_friendship json, ws
       when 'ChangedVideo'
-        handle_video_change json, nil, ws
+        handle_video_change json, ws
       when 'FriendExclusion'
-        handle_friend_exclusion json, nil, ws
+        handle_friend_exclusion json, ws
       when 'PING'
         ws.send '{"action": "PONG"}'
       else
@@ -80,19 +88,46 @@ module TubePeek
       end
     end
 
-    def handle_user (json, db_con, ws_client)
+    def handle_user (json, ws_client)
+      google_user_id = json['authData']['uid']
+      persist_user json
     end
 
-    def handle_online_status_change (json, db_con, ws_client)
+    def handle_online_status_change (json, ws_client)
     end
 
-    def handle_friendship (json, db_con, ws_client)
+    def handle_friendship (json, ws_client)
     end
 
-    def handle_video_change (json, db_con, ws_client)
+    def handle_video_change (json, ws_client)
     end
 
-    def handle_friend_exclusion (json, db_con, ws_client)
+    def handle_friend_exclusion (json, ws_client)
+    end
+
+    private
+    def persist_user(user_details)
+      google_user_id = user_details['authData']['uid']
+      existing_user = UserMaster.find_by(:uid => google_user_id)
+      # adults = User.where('age > ?', 18)
+      puts existing_user
+
+      if existing_user == nil
+        UserMaster.new { |u|
+          u.uid = google_user_id
+          u.provider = user_details['provider']
+          u.full_name = user_details['authData']['fullName']
+          u.image_url = user_details['authData']['imageUrl']
+        }.save
+      else
+        existing_user.full_name = user_details['authData']['fullName']
+        existing_user.image_url = user_details['authData']['imageUrl']
+        existing_user.save
+      end
+    end
+
+    private
+    def persist_video_watched(google_user_id, videoUrl, videoTitle)
     end
 
     # private
