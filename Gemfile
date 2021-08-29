@@ -11,5 +11,6 @@ gem "puma"
 gem "activerecord"
 gem "sqlite3"
 gem "httparty"
+gem "yaml"
 
 gem 'rspec', '~> 3.0'

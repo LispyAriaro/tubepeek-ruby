@@ -2,9 +2,20 @@ require 'active_record'
 require 'sinatra/base'
 require 'faye/websocket'
 require 'json'
+require 'yaml'
 require_relative './migrations/run_migrations'
 
 module TubePeek
+  def self.start_server
+    if ENV['YOUTUBE_API_KEY'] == nil
+      db_config_file = File.open('.dev-env')
+      db_config = YAML::load(db_config_file)
+      puts db_config
+    end
+
+    TubePeekMigrations::run_migrations
+  end
+
   class MainApp < Sinatra::Base
     get "/" do
       content_type :json
@@ -69,19 +80,19 @@ module TubePeek
       end
     end
 
-    def handle_user (jsojsonn_str, db_con, ws_client)
+    def handle_user (json, db_con, ws_client)
     end
 
-    def handle_online_status_change (json_str, db_con, ws_client)
+    def handle_online_status_change (json, db_con, ws_client)
     end
 
-    def handle_friendship (json_str, db_con, ws_client)
+    def handle_friendship (json, db_con, ws_client)
     end
 
-    def handle_video_change (json_str, db_con, ws_client)
+    def handle_video_change (json, db_con, ws_client)
     end
 
-    def handle_friend_exclusion (json_str, db_con, ws_client)
+    def handle_friend_exclusion (json, db_con, ws_client)
     end
 
     # private
@@ -93,4 +104,4 @@ module TubePeek
   end
 end
 
-TubePeekMigrations::run_migrations
+TubePeek::start_server
