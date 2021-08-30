@@ -112,6 +112,9 @@ module TubePeek
       google_user_id = json['authData']['uid']
       persist_user json
       existing_friends = UserFriend.where('user_google_uid > ?', google_user_id)
+
+
+
     end
 
     def handle_online_status_change(json, ws)
@@ -143,6 +146,63 @@ module TubePeek
     end
 
     def handle_friendship(json, ws_client)
+      google_user_id = json['googleUserId']
+      friend_google_user_id = json['friendGoogleUserId']
+
+      existing_friend = UserFriend.find_by(
+        :user_google_uid => google_user_id,
+        :friend_google_uid => friend_google_user_id)
+
+      if existing_friend == nil
+        UserFriend.new { |uf|
+          uf.user_google_uid = google_user_id
+          uf.friend_google_uid = friend_google_user_id
+          uf.is_friend_excluded = false
+        }.save
+      end
+
+      existing_reverse_friend = UserFriend.find_by(
+        :user_google_uid => friend_google_user_id,
+        :friend_google_uid => google_user_id)
+
+      if existing_reverse_friend == nil
+        UserFriend.new { |uf|
+          uf.user_google_uid = friend_google_user_id
+          uf.friend_google_uid = google_user_id
+          uf.is_friend_excluded = false
+        }.save
+      end
+
+      current_user = UserMaster.find_by(:uid => google_user_id)
+      friend_user = UserMaster.find_by(:uid => friend_google_user_id)
+
+      if current_user != nil and friend_user != nil
+        @clients.each { |ws_item|
+          if ws_item.googleUserId == friend_google_user_id
+            broadcast_data = {
+              'action' => 'NewFriendOnTubePeek',
+              'friendDetails' => {
+                'googleUserId' => google_user_id,
+                'fullName' => current_user.full_name,
+                'imageUrl' => current_user.image_url
+              }
+            }
+            ws_item.send(JSON.generate broadcast_data)
+          end
+
+          if ws_item.googleUserId == google_user_id
+            broadcast_data = {
+              'action' => 'NewFriendOnTubePeek',
+              'friendDetails' => {
+                'googleUserId' => friend_google_user_id,
+                'fullName' => friend_user.full_name,
+                'imageUrl' => friend_user.image_url
+              }
+            }
+            ws_item.send(JSON.generate broadcast_data)
+          end
+        }
+      end
       "{}"
     end
 
@@ -213,13 +273,6 @@ module TubePeek
         end
       end
     end
-
-    # private
-    # def sanitize(message)
-    #   json = JSON.parse(message)
-    #   json.each {|key, value| json[key] = ERB::Util.html_escape(value) }
-    #   JSON.generate(json)
-    # end
   end
 end
 
