@@ -19,9 +19,12 @@ module TubePeek
       config = YAML::load(config_file)
       puts config
       puts config['YOUTUBE_API_KEY']
+      if config['YOUTUBE_API_KEY'] == nil
+        exit
+      end
     end
 
-    TubePeekMigrations::run_migrations
+    TubePeekMigrations::run
   end
 
   class MainApp < Sinatra::Base
@@ -88,21 +91,32 @@ module TubePeek
       end
     end
 
-    def handle_user (json, ws_client)
+    def handle_user(json, ws_client)
       google_user_id = json['authData']['uid']
       persist_user json
     end
 
-    def handle_online_status_change (json, ws_client)
+    def handle_online_status_change(json, ws_client)
+      "{}"
     end
 
-    def handle_friendship (json, ws_client)
+    def handle_video_change(json, ws_client)
+      "{}"
     end
 
-    def handle_video_change (json, ws_client)
+    def handle_friendship(json, ws_client)
+      "{}"
     end
 
     def handle_friend_exclusion (json, ws_client)
+      existing_friend = UserFriend.find_by(
+        :user_google_uid => json['googleUserId'],
+        :friend_google_uid => json['friendGoogleUserId'])
+
+      if existing_friend != nil
+        existing_friend.is_friend_excluded = json['exclude']
+        existing_friend.save
+      end
     end
 
     private
