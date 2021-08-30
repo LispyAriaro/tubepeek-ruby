@@ -48,6 +48,7 @@ module TubePeek
         ws = Faye::WebSocket.new(env, nil, {ping: KEEPALIVE_TIME })
         ws.on :open do |event|
           p [:open, ws.object_id]
+          ws.online_friends = []
           @clients << ws
         end
 
@@ -61,7 +62,22 @@ module TubePeek
 
         ws.on :close do |event|
           p [:close, ws.object_id, event.code, event.reason]
-          @clients.delete(ws)
+
+          broadcast_data = {
+            'action' => 'TakeFriendOnlineStatus',
+            'googleUserId' => conn_metadata.googleUserId,
+            'onlineState' => false
+          }
+
+          @clients.each { |ws_item|
+            if ws_item.object_id == ws.object_id
+              ws_item.online_friends.each {|ws_item_friend|
+                ws_item_friend.send(JSON.generate broadcast_data)
+              }
+            end
+          }
+          @clients.delete_if {|ws_client| ws_client.object_id == ws.object_id }
+          # @clients.delete(ws)
           ws = nil
         end
 
