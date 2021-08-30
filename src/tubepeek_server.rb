@@ -6,25 +6,10 @@ require 'yaml'
 require_relative './migrations/run_migrations'
 require_relative './entities'
 require_relative './utils'
+require 'videoinfo'
 
 module TubePeek
   def self.start_server
-    if ENV['YOUTUBE_API_KEY'] == nil
-      # File::open('dev-env.yaml') do |config_file|
-      #   config = YAML::load(config_file)
-      #   puts config
-      #   puts config['YOUTUBE_API_KEY']
-      # end
-
-      config_file = File.open('dev-env.yaml')
-      config = YAML::load(config_file)
-      puts config
-      puts config['YOUTUBE_API_KEY']
-      if config['YOUTUBE_API_KEY'] == nil
-        exit
-      end
-    end
-
     TubePeekMigrations::run
   end
 
@@ -57,7 +42,6 @@ module TubePeek
           json = JSON.parse(event.data)
 
           handle_ws_msg json, ws
-          # @clients.each {|ws_item| ws_item.send(event.data) }
         end
 
         ws.on :close do |event|
@@ -77,7 +61,6 @@ module TubePeek
             end
           }
           @clients.delete_if {|ws_client| ws_client.object_id == ws.object_id }
-          # @clients.delete(ws)
           ws = nil
         end
 
@@ -142,6 +125,44 @@ module TubePeek
     end
 
     def handle_video_change(json, ws_client)
+      video_url = json['videoUrl']
+      google_user_id = json['googleUserId']
+
+      video = VideoInfo.new(video_url)
+
+      ws_client.currentVideo = {
+        'videoUrl' => video_url,
+        'title' => video.title,
+        'thumbnail_url' => video.thumbnail_medium,
+        'timeStampInMilliseconds' => (Time.now.to_f.round(3)*1000).to_i
+      }
+
+      user = UserMaster.find_by(:uid => google_user_id)
+
+      broadcast_data = {
+        'action' => 'TakeFriendVideoChange',
+        'googleUserId' => google_user_id,
+        'videoData' => {
+          'videoUrl' => video_url,
+          'title' => video.title,
+          'thumbnail_url' => video.thumbnail_medium,
+          'timeStampInMilliseconds' => (Time.now.to_f.round(3)*1000).to_i
+        },
+        'friendData' => {
+          'full_name' => user.full_name,
+          'image_url' => user.image_url,
+        },
+      }
+
+      @clients.each { |ws_item|
+        if ws_item.object_id == ws_client.object_id
+          ws_item.online_friends.each {|ws_item_friend|
+            ws_item_friend.send(JSON.generate broadcast_data)
+          }
+        end
+      }
+
+      persist_video_watched google_user_id video_url video.video_id video.title
       "{}"
     end
 
@@ -238,19 +259,17 @@ module TubePeek
     end
 
     private
-    def persist_video_watched(google_user_id, video_url, video_title)
-      youtube_video_id = Utils::get_youtube_videoid video_url
-
+    def persist_video_watched(google_user_id, video_url, video_id, video_title)
       existing_user = UserMaster.find_by(:uid => google_user_id)
       if existing_user == nil
         return
       end
 
-      existing_video = Video.find_by(:youtube_video_id => youtube_video_id)
+      existing_video = Video.find_by(:youtube_video_id => video.video_id)
       if existing_video == nil
         video = Video.new { |v|
           v.video_url = video_url
-          v.youtube_video_id = youtube_video_id
+          v.youtube_video_id = video.video_id
           v.video_title = video_title
         }
         video.save

@@ -12,6 +12,8 @@ GEM
       minitest (>= 5.1)
       tzinfo (~> 2.0)
       zeitwerk (~> 2.3)
+    ansi (1.5.0)
+    ast (2.4.2)
     concurrent-ruby (1.1.9)
     diff-lcs (1.4.4)
     eventmachine (1.2.7)
@@ -23,6 +25,7 @@ GEM
       multi_xml (>= 0.5.2)
     i18n (1.8.10)
       concurrent-ruby (~> 1.0)
+    iso8601 (0.9.1)
     json (2.5.1)
     mime-types (3.3.1)
       mime-types-data (~> 3.2015)
@@ -31,7 +34,11 @@ GEM
     multi_xml (0.6.0)
     mustermann (1.1.1)
       ruby2_keywords (~> 0.0.1)
+    net_http_timeout_errors (0.3.5)
     nio4r (2.5.8)
+    oga (3.3)
+      ast
+      ruby-ll (~> 2.1)
     puma (5.4.0)
       nio4r (~> 2.0)
     rack (2.2.3)
@@ -50,6 +57,9 @@ GEM
       diff-lcs (>= 1.2.0, < 2.0)
       rspec-support (~> 3.10.0)
     rspec-support (3.10.2)
+    ruby-ll (2.1.2)
+      ansi
+      ast
     ruby2_keywords (0.0.5)
     sinatra (2.1.0)
       mustermann (~> 1.0)
@@ -60,6 +70,10 @@ GEM
     tilt (2.0.10)
     tzinfo (2.0.4)
       concurrent-ruby (~> 1.0)
+    video_info (3.0.1)
+      iso8601 (~> 0.9.1)
+      net_http_timeout_errors (~> 0.3.0)
+      oga (~> 3.0)
     websocket-driver (0.7.5)
       websocket-extensions (>= 0.1.0)
     websocket-extensions (0.1.5)
@@ -78,6 +92,7 @@ DEPENDENCIES
   rspec (~> 3.0)
   sinatra
   sqlite3
+  video_info
   yaml
 
 BUNDLED WITH

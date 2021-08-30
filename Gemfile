@@ -12,5 +12,6 @@ gem "activerecord"
 gem "sqlite3"
 gem "httparty"
 gem "yaml"
+gem "video_info"
 
 gem 'rspec', '~> 3.0'
