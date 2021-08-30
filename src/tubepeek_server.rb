@@ -5,6 +5,7 @@ require 'json'
 require 'yaml'
 require_relative './migrations/run_migrations'
 require_relative './entities'
+require_relative './utils'
 
 module TubePeek
   def self.start_server
@@ -141,7 +142,40 @@ module TubePeek
     end
 
     private
-    def persist_video_watched(google_user_id, videoUrl, videoTitle)
+    def persist_video_watched(google_user_id, video_url, video_title)
+      youtube_video_id = Utils::get_youtube_videoid video_url
+
+      existing_user = UserMaster.find_by(:uid => google_user_id)
+      if existing_user == nil
+        return
+      end
+
+      existing_video = Video.find_by(:youtube_video_id => youtube_video_id)
+      if existing_video == nil
+        video = Video.new { |v|
+          v.video_url = video_url
+          v.youtube_video_id = youtube_video_id
+          v.video_title = video_title
+        }
+        video.save
+
+        UserVideo.new { |uv|
+          uv.user_id = video_url
+          uv.video_id = video.id
+        }.save
+      else
+        existing_user_video = UserVideo.find_by(
+          :user_id => existing_user.id,
+          :video_id => existing_video.id
+        )
+
+        if existing_user_video == nil
+          UserVideo.new { |uv|
+            uv.user_id = existing_user.id
+            uv.video_id = existing_video.id
+          }.save
+        end
+      end
     end
 
     # private
