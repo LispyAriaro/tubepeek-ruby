@@ -7,7 +7,6 @@ class CreateUserTable < ActiveRecord::Migration[5.2]
     unless ActiveRecord::Base.connection.table_exists?(:usermaster)
       create_table :usermaster do |table|
         table.string :uid
-        table.string :provider
         table.string :full_name
         table.string :image_url
         table.timestamps

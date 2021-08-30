@@ -65,7 +65,7 @@ module TubePeek
 
           broadcast_data = {
             'action' => 'TakeFriendOnlineStatus',
-            'googleUserId' => conn_metadata.googleUserId,
+            'googleUserId' => ws.googleUserId,
             'onlineState' => false
           }
 
@@ -111,9 +111,30 @@ module TubePeek
     def handle_user(json, ws_client)
       google_user_id = json['authData']['uid']
       persist_user json
+      existing_friends = UserFriend.where('user_google_uid > ?', google_user_id)
     end
 
-    def handle_online_status_change(json, ws_client)
+    def handle_online_status_change(json, ws)
+      google_user_id = json['googleUserId']
+      online_status = json['onlineState']
+
+      broadcast_data = {
+        'action' => 'TakeFriendOnlineStatus',
+        'googleUserId' => google_user_id,
+        'onlineState' => online_status
+      }
+
+      @clients.each { |ws_item|
+        if ws_item.object_id == ws.object_id
+          ws_item.online_friends.each {|ws_item_friend|
+            ws_item_friend.send(JSON.generate broadcast_data)
+          }
+        end
+      }
+      if online_status == false
+        @clients.delete_if {|ws_client| ws_client.object_id == ws.object_id }
+      end
+
       "{}"
     end
 
@@ -146,7 +167,6 @@ module TubePeek
       if existing_user == nil
         UserMaster.new { |u|
           u.uid = google_user_id
-          u.provider = user_details['provider']
           u.full_name = user_details['authData']['fullName']
           u.image_url = user_details['authData']['imageUrl']
         }.save
