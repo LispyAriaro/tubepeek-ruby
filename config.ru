@@ -1,5 +1,5 @@
 require './src/tubepeek_server'
 
-use TubePeek::WebSocket
+use TubePeek::WebSocketServer
 
 run TubePeek::MainApp

@@ -18,6 +18,7 @@ end
 class UserFriend < ActiveRecord::Base
   self.table_name = 'userfriends'
   self.primary_key = 'id'
+  belongs_to :usermaster, class_name: "UserMaster", foreign_key: :user_google_uid
 end
 
 class Video < ActiveRecord::Base
