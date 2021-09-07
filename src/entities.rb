@@ -1,14 +1,25 @@
 require 'active_record'
 
-ActiveRecord::Base.establish_connection(adapter: 'sqlite3', database: 'tubepeekdb.db')
+environment = ENV['environment']
 
-# ActiveRecord::Base.establish_connection(
-#   adapter: 'postgresql',
-#   host: 'localhost',
-#   username: 'my_user',
-#   password: 'p@ssw0rd',
-#   database: 'my_db'
-# )
+if environment == 'development' || environment == nil
+  ActiveRecord::Base.establish_connection(adapter: 'sqlite3', database: 'tubepeekdb.db')
+else
+  host = ENV['DATABASE_HOST']
+  port = ENV['DATABASE_PORT']
+  db_username = ENV['DATABASE_USERNAME']
+  db_password = ENV['DATABASE_PASSWORD']
+  db_name = ENV['DATABASE_NAME']
+
+  ActiveRecord::Base.establish_connection(
+    adapter: 'postgresql',
+    host: host,
+    port: port,
+    username: db_username,
+    password: db_password,
+    database: db_name
+  )
+end
 
 class UserMaster < ActiveRecord::Base
   self.table_name = 'usermaster'
